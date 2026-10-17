@@ -15,10 +15,7 @@ La app sigue creyendo que vive en "/": este middleware ASGI
    valores de claves tipo url/enlace (nunca el texto que escribe la gente).
 Asi tambien salen bien los enlaces guardados en la BD (avisos, muros).
 
-Sin ruta (ni variable ni cabecera) la peticion pasa tal cual. Tambien
-pasa tal cual lo que llega a /ajustes/ sin el prefijo: son los Ajustes del
-servidor, que la entrada de cada entorno sirve en la raiz del dominio (no
-dentro de /tareas/, ver routers/despliegues.py).
+Sin ruta (ni variable ni cabecera) la peticion pasa tal cual.
 """
 import json
 import os
@@ -27,10 +24,6 @@ import re
 # JS de terceros que no hay que tocar (sus cadenas no son rutas de la app)
 _JS_INTACTOS = ("/static/js/editorjs/", "/static/js/sortable.min.js")
 _CLAVES_URL = {"url", "enlace", "link", "href", "redirect", "location", "volver", "next"}
-
-
-# rutas de la app que viven en la raiz del dominio, fuera del prefijo
-SIN_PREFIJO = ("/ajustes",)
 
 _RUTA_VALIDA = re.compile(r"^(/[A-Za-z0-9_.-]+)+$")
 
@@ -95,8 +88,6 @@ class RutaBaseMiddleware:
         if not prefijo:
             return await self.app(scope, receive, send)
         path = scope.get("path", "")
-        if any(path == r or path.startswith(r + "/") for r in SIN_PREFIJO):
-            return await self.app(scope, receive, send)
         if path == prefijo and scope["type"] == "http":
             destino = prefijo + "/" + (("?" + scope["query_string"].decode()) if scope.get("query_string") else "")
             await send({"type": "http.response.start", "status": 308,

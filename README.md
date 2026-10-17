@@ -7,7 +7,7 @@ git remote add base https://github.com/larceing/APP_TAREAS_BASE.git   # una vez
 git fetch base main && git merge base/main
 ```
 
-`servidor.json` lo da de alta en el servidor (larceing/servidor): su tarjeta en Ajustes, sus grupos `/DEV/Tareas` y `/PRO/Tareas` de Keycloak y sus despliegues con `despliegue.yml`.
+`servidor.json` lo da de alta en el servidor (larceing/servidor): su ruta `/tareas/` en la entrada de cada entorno, su tarjeta en Ajustes, sus grupos `/DEV/Tareas` y `/PRO/Tareas` de Keycloak y sus despliegues con `despliegue.yml`.
 
 ---
 
@@ -27,7 +27,6 @@ Esta es la **versión base**: la misma aplicación que está en producción, sin
 | [docs/MANUAL_DE_USO.md](docs/MANUAL_DE_USO.md) | Personas que usan la app |
 | [docs/NORMATIVA_DE_USO.md](docs/NORMATIVA_DE_USO.md) | Todo el mundo (plantilla a adaptar por cada empresa) |
 | [docs/ADMINISTRACION.md](docs/ADMINISTRACION.md) | IT: usuarios, copias, actualizaciones, logs |
-| [docs/MANUAL_VERSIONES.md](docs/MANUAL_VERSIONES.md) | IT: sacar versiones, volver atrás, crear apps y dominios desde el panel (sin terminal) |
 | [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) | IT: entornos DEV y PRO con versiones y rollback (GitHub Actions) |
 | [docs/CONECTORES.md](docs/CONECTORES.md) | IT: traer datos de otros sistemas como tareas |
 | [docs/NEXUS_ESTRUCTURA_DE_GRAFOS.md](docs/NEXUS_ESTRUCTURA_DE_GRAFOS.md) | IT / desarrollo: modelo de relaciones y catálogo |

@@ -137,7 +137,6 @@
     <a class="config-nav-item {% if tab_activo == 'api' %}active{% endif %}" href="/configuracion/?tipo=api">{{ icon("key", 15) }}<span class="config-nav-item-label">{{ titulos_tab.api }}</span> <span class="config-nav-count">{{ conteos.api }}</span></a>
     <a class="config-nav-item {% if tab_activo == 'calendario_sync' %}active{% endif %}" href="/configuracion/?tipo=calendario_sync">{{ icon("rss", 15) }}<span class="config-nav-item-label">{{ titulos_tab.calendario_sync }}</span></a>
     {% if modulo_activo('conectores') %}<a class="config-nav-item {% if tab_activo == 'conectores' %}active{% endif %}" href="/configuracion/?tipo=conectores">{{ icon("download", 15) }}<span class="config-nav-item-label">{{ titulos_tab.conectores }}</span></a>{% endif %}
-    {% if modulo_activo('despliegues') and es_admin_global() %}<a class="config-nav-item" href="/ajustes/">{{ icon("server", 15) }}<span class="config-nav-item-label">{{ titulos_tab.despliegues }}</span></a>{% endif %}
     {% if modulo_activo('nexus') %}<a class="config-nav-item {% if tab_activo == 'nexus' %}active{% endif %}" href="/configuracion/?tipo=nexus">{{ icon("search", 15) }}<span class="config-nav-item-label">{{ titulos_tab.nexus }}</span></a>{% endif %}
 
     {% if modulo_activo('escritorio') %}
