@@ -40,7 +40,6 @@ TITULOS_TAB = {
     "textos": "Textos", "mantis": "Mantis", "sistema": "Copias de seguridad", "api": "API",
     "calendario_sync": "Calendario externo", "nexus": "Nexus", "conectores": "Conectores",
     "recordatorio": "Recordatorio", "vigilante": "Vigilante de Mantis", "vigia": "Vigía de carpeta",
-    "despliegues": "Despliegues",
 }
 
 # Como traer el contenido de cada pestana -- un dict {tipo: funcion} en vez
@@ -61,13 +60,11 @@ _CARGADORES = {
     "recordatorio": lambda: db.load_recordatorio_mensajes(real=escritorio_servicios.USAR_BD_REAL),
     "vigilante": lambda: [],  # panel propio (ver ctx["esc_cfg"])
     "vigia": lambda: [],  # panel propio (ver ctx["esc_cfg"])
-    "despliegues": lambda: [],  # panel propio (ver ctx["despliegue"])
 }
 
 
 # pestañas que solo existen con su modulo opcional activo
 _MODULO_DE_TAB = {"mantis": "mantis", "vigilante": "mantis", "nexus": "nexus", "conectores": "conectores",
-                  "despliegues": "despliegues",
                   "recordatorio": "escritorio", "vigia": "escritorio"}
 
 
@@ -80,8 +77,6 @@ def ver_configuracion(request: Request, tipo: str = "empresas", usuario: str = D
     tab_activo = tipo if tipo in ("empresas", *TITULOS_TAB) else "empresas"
     if tab_activo in _MODULO_DE_TAB and not config.modulo_activo(_MODULO_DE_TAB[tab_activo]):
         tab_activo = "empresas"  # pestaña de un modulo apagado (ver config.py)
-    if tab_activo == "despliegues":  # ahora es la pagina Ajustes del servidor (boton de la portada)
-        return RedirectResponse(url="/ajustes/", status_code=303)
     conteos = db.get_conteos_pendientes()
     conteos["sistema"] = db.count_backups()  # el nav llama "sistema" a la pestana de Backups
     conteos["api"] = len(db.load_api_tokens())

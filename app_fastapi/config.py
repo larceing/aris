@@ -11,12 +11,12 @@ modulo respecto a load_dotenv().
   en la pantalla de Keycloak y la sesion vale para todas las apps del realm),
   ver auth.py y routers/login.py.
 - Modulos opcionales, apagados por defecto: MODULO_MANTIS, MODULO_NEXUS,
-  MODULO_ESCRITORIO, MODULO_CONECTORES, MODULO_DESPLIEGUES. Apagado = no se monta su router, no sale en el menu ni
+  MODULO_ESCRITORIO, MODULO_CONECTORES. Apagado = no se monta su router, no sale en el menu ni
   en Configuracion, y (escritorio) no arrancan sus hilos.
 """
 import os
 
-MODULOS = ("mantis", "nexus", "escritorio", "conectores", "despliegues")
+MODULOS = ("mantis", "nexus", "escritorio", "conectores")
 
 _VERDADERO = {"1", "true", "si", "sí", "yes", "on"}
 

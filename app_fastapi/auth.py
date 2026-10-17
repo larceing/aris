@@ -48,9 +48,7 @@ class NoEsIT(Exception):
 
 class SinAccesoApp(Exception):
     """Keycloak acepta a la persona, pero no esta en el grupo de esta app
-    (KEYCLOAK_GRUPO_APP) ni es admin global -- login.py enseña un aviso, o
-    si venia de la portada la deja entrar solo en la portada (con su usuario
-    y sus grupos, para ver sus apps)."""
+    (KEYCLOAK_GRUPO_APP) ni es admin global -- login.py enseña un aviso."""
     def __init__(self, usuario=None, grupos=None):
         super().__init__(usuario)
         self.usuario = usuario
@@ -88,9 +86,8 @@ def acceso_por_grupos(grupos) -> tuple[bool, bool]:
 
 
 def es_admin_global(grupos) -> bool:
-    """De KEYCLOAK_GRUPO_ADMIN_GLOBAL (por defecto IT): administra el servidor
-    entero (el panel de Ajustes de la portada, con todas las apps). Ser Admin
-    de una sola app (/Tareas/Admin) no basta."""
+    """De KEYCLOAK_GRUPO_ADMIN_GLOBAL (por defecto IT): entra y administra
+    todas las apps del realm. Ser Admin de una sola app (/Tareas/Admin) no basta."""
     nombres = {g.strip().strip("/") for g in (grupos or []) if isinstance(g, str)}
     admin_global = os.getenv("KEYCLOAK_GRUPO_ADMIN_GLOBAL", "IT").strip().strip("/")
     return bool(admin_global) and admin_global in nombres
@@ -341,14 +338,6 @@ def iniciar_sesion(request: Request, username: str, es_it: bool = False, admin_g
         pass
 
 
-def iniciar_sesion_portada(request: Request, username: str, grupos) -> None:
-    """Solo para la portada: alguien del realm que no tiene Tareas pero si
-    otras apps. No hay "usuario", asi que Tareas (requiere_login) no le abre."""
-    request.session.clear()
-    request.session["portada_usuario"] = username
-    request.session["grupos"] = normalizar_grupos(grupos)
-
-
 def cerrar_sesion(request: Request) -> None:
     request.session.clear()
 
@@ -369,21 +358,3 @@ def requiere_it(request: Request, usuario: str = Depends(requiere_login)) -> str
         raise NoEsIT()
     return usuario
 
-
-def es_admin_global_sesion(request: Request) -> bool:
-    """IT de todo el servidor (ver es_admin_global). Una sesion de antes de
-    que existiera la marca solo cuenta si la app no tiene grupo propio (ahi
-    IT de la app y admin global eran lo mismo)."""
-    if not request.session.get("usuario"):
-        return False
-    marca = request.session.get("admin_global")
-    if marca is None:
-        return bool(request.session.get("es_it")) and not os.getenv("KEYCLOAK_GRUPO_APP", "").strip()
-    return bool(marca)
-
-
-def requiere_admin_global(request: Request, usuario: str = Depends(requiere_login)) -> str:
-    """Para el panel de Ajustes del servidor (todas las apps): solo IT global."""
-    if not es_admin_global_sesion(request):
-        raise NoEsIT()
-    return usuario

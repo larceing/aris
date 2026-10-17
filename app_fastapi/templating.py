@@ -96,16 +96,6 @@ templates.env.globals["es_it"] = _es_it
 
 
 @jinja2.pass_context
-def _es_admin_global(ctx) -> bool:
-    """IT de todo el servidor (Ajustes del servidor, ver auth.requiere_admin_global)."""
-    from . import auth
-    return auth.es_admin_global_sesion(ctx["request"])
-
-
-templates.env.globals["es_admin_global"] = _es_admin_global
-
-
-@jinja2.pass_context
 def _puede_ver_nexus(ctx) -> bool:
     """Para el enlace "Nexus" del sidebar (_base.html) -- oculto a quien no
     tendria acceso de todas formas, mismo criterio que

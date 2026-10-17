@@ -50,7 +50,7 @@ services:
         aliases:
           - tareas-${ENTORNO:?falta ENTORNO}
           # el nombre de una instalacion de antes cuya direccion toma este
-          # entorno (tareas.sh publicar); sin el, repite el de arriba
+          # entorno (ALIAS_PUBLICO en su .env); sin el, repite el de arriba
           - ${ALIAS_PUBLICO:-tareas-${ENTORNO}}
 
 volumes:
