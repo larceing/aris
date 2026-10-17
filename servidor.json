@@ -5,7 +5,7 @@
   "contenedor": "tareas-{entorno}",
   "puerto": 8000,
   "prefijo": "conservar",
-  "entrada": "propia",
+  "entrada": "servidor",
   "version": "version/",
   "despliegue": {
     "workflow": "despliegue.yml",
