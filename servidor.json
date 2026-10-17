@@ -1,0 +1,17 @@
+{
+  "nombre": "Aris",
+  "ruta": "tareas",
+  "grupo": "Tareas",
+  "contenedor": "tareas-{entorno}",
+  "puerto": 8000,
+  "prefijo": "conservar",
+  "entrada": "propia",
+  "version": "version/",
+  "despliegue": {
+    "workflow": "despliegue.yml",
+    "rama": "main",
+    "campo_entorno": "entorno",
+    "campo_version": "version",
+    "anterior": true
+  }
+}
