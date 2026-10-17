@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A task/project management web app for a team (Kanban + Scrum boards, calendar/agenda, wiki, notes, whiteboard, SLA, person-to-person notes, activity walls, API). This repo is the **company-neutral base version**: no company data or integrations baked in. Everything that changes between installations lives in `app_fastapi/.env` (branding, login mode, optional modules), and the install comes with demo data. User docs live in `docs/`. Docs and UI text are in Spanish.
+A task/project management web app for a team (Kanban + Scrum boards, calendar/agenda, wiki, notes, whiteboard, SLA, person-to-person notes, activity walls, API). This repo is **Aris**, our own installation: it started as a full-history copy of the company-neutral base (larceing/APP_TAREAS_BASE) and takes its improvements by merging `base/main` (see README). Keep it company-neutral in code all the same: no company data or integrations baked in. Everything that changes between installations lives in `app_fastapi/.env` (branding, login mode, optional modules), and the install comes with demo data. User docs live in `docs/`. Docs and UI text are in Spanish.
 
 ## Commands
 

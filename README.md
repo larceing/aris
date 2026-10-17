@@ -1,4 +1,16 @@
-# Gestor de Tareas — versión base
+# Aris
+
+**Aris** es nuestro gestor de tareas: la instalación propia (DEV y PRO en `/tareas/` del servidor) de la [versión base](https://github.com/larceing/APP_TAREAS_BASE). Este repositorio empezó como copia de la base con todo su historial; para traer sus mejoras:
+
+```bash
+git remote add base https://github.com/larceing/APP_TAREAS_BASE.git   # una vez
+git fetch base main && git merge base/main
+```
+
+`servidor.json` lo da de alta en el servidor (larceing/servidor): su tarjeta en Ajustes, sus grupos `/DEV/Tareas` y `/PRO/Tareas` de Keycloak y sus despliegues con `despliegue.yml`.
+
+---
+
 
 Aplicación web para la gestión del trabajo de un equipo (pensada para IT y soporte, válida para cualquier área). Incluye:
 
