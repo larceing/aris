@@ -1,6 +1,6 @@
-# Aris
+# Odin
 
-**Aris** es nuestro gestor de tareas: la instalación propia (DEV y PRO en `/tareas/` del servidor) de la [versión base](https://github.com/larceing/APP_TAREAS_BASE). Este repositorio empezó como copia de la base con todo su historial; para traer sus mejoras:
+**Odin** es nuestro gestor de tareas: la instalación propia (DEV y PRO en `/tareas/` del servidor) de la [versión base](https://github.com/larceing/APP_TAREAS_BASE). Este repositorio empezó como copia de la base con todo su historial; para traer sus mejoras:
 
 ```bash
 git remote add base https://github.com/larceing/APP_TAREAS_BASE.git   # una vez

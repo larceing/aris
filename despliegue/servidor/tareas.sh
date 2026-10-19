@@ -148,8 +148,8 @@ cmd_preparar() {
   for ent in $ENTORNOS; do
     mkdir -p "$DIR/$ent" "$DIR/copias/$ent"
     case $ent in
-      dev) demo=1; memoria=512m; nombre="Gestor de Tareas (DEV)";;
-      pro) demo=0; memoria=768m; nombre="Gestor de Tareas";;
+      dev) demo=1; memoria=512m; nombre="Odin (DEV)";;
+      pro) demo=0; memoria=768m; nombre="Odin";;
     esac
     if [[ ! -f "$DIR/$ent/.env" ]]; then
       cat > "$DIR/$ent/.env" <<EOF
