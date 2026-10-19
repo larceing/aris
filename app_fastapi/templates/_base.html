@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}{{ app_nombre() }}{% endblock %}</title>
-<!-- icono propio de esta "v2", distinto al favicon.ico de la app Django --
-     un rayo (referencia a FastAPI) sobre el morado --selected de la app,
-     para que se distinga a simple vista en la pestaña del navegador. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237c3aed'/%3E%3Cpath d='M17.5 5 8 18h6.2l-1.7 9L24 14h-6.5z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="/static/img/favicon.png">
 <link rel="stylesheet" href="/static/css/main.css">
 {% if app_tema_css() %}<link rel="stylesheet" href="{{ app_tema_css() }}">{% endif %}
 {% block extra_head %}{% endblock %}

@@ -79,7 +79,7 @@ button { cursor: pointer; font-family: inherit; }
 .sr-empty { padding: 16px; text-align: center; color: var(--muted); font-size: 13px; }
 @media (max-width: 900px) { .global-search-wrap { width: 200px; } }
 .app-title { font-size: 16px; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; }
-.app-logo { height: 16px; filter: brightness(0) invert(1); }
+.app-logo { height: 24px; filter: brightness(0) invert(1); }
 .header-right { display: flex; align-items: center; align-self: stretch; gap: 8px; margin-left: auto; }
 .header-view-btn {
     display: inline-flex; align-items: center; align-self: stretch; gap: 6px;
