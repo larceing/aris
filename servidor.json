@@ -7,6 +7,7 @@
   "prefijo": "conservar",
   "entrada": "servidor",
   "version": "version/",
+  "icono": "static/img/logo.svg",
   "despliegue": {
     "workflow": "despliegue.yml",
     "rama": "main",
