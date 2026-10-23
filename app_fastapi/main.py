@@ -17,7 +17,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-from . import auth, config, csrf, db, escritorio_servicios, logging_setup, portada, ruta_base  # noqa: E402
+from . import auth, config, csrf, db, escritorio_servicios, logging_setup, portada, ruta_base, visibilidad  # noqa: E402
 from .flash import flash  # noqa: E402
 from .routers import agenda, api_externa, buzon, calendario, configuracion, login, mantis, marcadores, muro, nexus, notas, notificaciones, proyectos, reunion, sla, tablero, whiteboard, wiki  # noqa: E402
 from .templating import templates  # noqa: E402
@@ -43,7 +43,8 @@ async def lifespan(app):
         motor.parar()
 
 
-app = FastAPI(title=config.app_nombre(), dependencies=[Depends(csrf.proteger)], lifespan=lifespan)
+app = FastAPI(title=config.app_nombre(), dependencies=[Depends(csrf.proteger), Depends(visibilidad.proteger)],
+              lifespan=lifespan)
 
 # Primeros archivos estaticos de esta v2 (hasta ahora todo el CSS/JS iba
 # inline en cada plantilla) -- solo para EditorJS (Wiki), que es un vendor

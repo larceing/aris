@@ -5,6 +5,7 @@ Lee las mismas variables DB_* del .env y el mismo interruptor real/test que
 ya usa la app principal (data/entorno_db.txt), asi este proyecto ve siempre
 la misma configuracion y los mismos datos que la app de verdad -- nunca una
 copia separada."""
+import contextvars
 import hashlib
 import json
 import os
@@ -775,7 +776,8 @@ def load_proyectos_basico() -> list:
     conn = connect()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, nombre, tipo, estado FROM proyectos ORDER BY orden")
+            cond, params = _ver_por_espacio("espacio_id")
+            cur.execute(f"SELECT id, nombre, tipo, estado FROM proyectos WHERE {cond} ORDER BY orden", params or None)
             return [{"id": r[0], "nombre": r[1], "tipo": r[2], "estado": r[3]} for r in cur.fetchall()]
     finally:
         conn.close()
@@ -864,7 +866,9 @@ def load_proyectos_calendario() -> list:
     conn = connect()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, nombre, color, tipo FROM proyectos WHERE activo=TRUE ORDER BY orden")
+            cond, params = _ver_por_espacio("espacio_id")
+            cur.execute(f"SELECT id, nombre, color, tipo FROM proyectos WHERE activo=TRUE AND {cond} ORDER BY orden",
+                        params or None)
             return [{"id": r[0], "nombre": r[1], "color": r[2], "tipo": r[3]} for r in cur.fetchall()]
     finally:
         conn.close()
@@ -893,6 +897,7 @@ def load_home_overview() -> list:
     necesita el dashboard de inicio (main.py::inicio) para calcular vencidas
     y de prioridad alta -- una sola consulta con JOIN a proyectos, en vez de
     una query por proyecto."""
+    cond, params = _ver_por_espacio("p.espacio_id")
     conn = connect()
     try:
         with conn.cursor() as cur:
@@ -900,7 +905,8 @@ def load_home_overview() -> list:
                 "SELECT t.id, t.proyecto_id, p.nombre, p.color, t.titulo, t.estado, "
                 "t.prioridad, t.fecha_fin, t.asignado_a, p.espacio_id "
                 "FROM tareas t JOIN proyectos p ON p.id = t.proyecto_id "
-                "WHERE t.borrada=0 AND p.activo=TRUE"
+                f"WHERE t.borrada=0 AND p.activo=TRUE AND {cond}",
+                params or None,
             )
             return [
                 {
@@ -915,7 +921,7 @@ def load_home_overview() -> list:
 
 
 # ── espacios (workspaces): fase 1 del multiusuario, solo estructura + ──────
-# pertenencia -- ver CLAUDE.md. Ninguna ruta filtra todavia por esto.
+# pertenencia -- ver CLAUDE.md. Quien ve que: visibilidad.py y _ver_* mas abajo.
 
 def get_user_id(username: str):
     """La sesion solo guarda el username (ver auth.py::iniciar_sesion); esto
@@ -983,6 +989,7 @@ def get_or_create_espacio_personal(user_id: int) -> dict:
 
 
 def load_espacios() -> list:
+    cond, params = _ver_espacio("e.id")
     conn = connect()
     try:
         with conn.cursor() as cur:
@@ -990,7 +997,8 @@ def load_espacios() -> list:
                 "SELECT e.id, e.nombre, e.color, e.orden, e.activo, e.es_personal, "
                 "(SELECT COUNT(*) FROM espacio_usuarios eu WHERE eu.espacio_id = e.id) AS n_miembros, "
                 "(SELECT COUNT(*) FROM proyectos p WHERE p.espacio_id = e.id) AS n_proyectos "
-                "FROM espacios e ORDER BY e.es_personal DESC, e.orden, e.nombre"
+                f"FROM espacios e WHERE {cond} ORDER BY e.es_personal DESC, e.orden, e.nombre",
+                params or None,
             )
             return [
                 {
@@ -1161,6 +1169,107 @@ def marcar_it(username: str, es_it: bool) -> None:
         conn.close()
 
 
+# ── quien ve que: cada espacio solo lo ven sus miembros ──────────────────
+# visibilidad.py (dependencia global de main.py) fija aqui, en cada peticion,
+# los espacios que puede ver quien la hace. None = lo ve todo (IT, o codigo
+# que no viene de una peticion: tests, scripts, la API con llave). Los
+# listados de abajo lo aplican solos, asi ninguna pagina nueva se lo salta.
+# Un proyecto sin espacio (legado) lo sigue viendo todo el mundo.
+_visor: contextvars.ContextVar = contextvars.ContextVar("aris_visor", default=None)
+
+
+def fijar_visor(espacio_ids) -> None:
+    _visor.set(None if espacio_ids is None else frozenset(espacio_ids))
+
+
+def visor_actual():
+    return _visor.get()
+
+
+def espacios_de_usuario(user_id: int) -> set:
+    """Espacios de los que es miembro, mas su espacio personal."""
+    if user_id is None:
+        return set()
+    conn = connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT espacio_id FROM espacio_usuarios WHERE user_id=%s "
+                "UNION SELECT id FROM espacios WHERE owner_id=%s",
+                (user_id, user_id),
+            )
+            return {r[0] for r in cur.fetchall()}
+    finally:
+        conn.close()
+
+
+def _lista(v) -> tuple[str, list]:
+    v = sorted(v)
+    return ",".join(["%s"] * len(v)), v
+
+
+def _ver_espacio(col: str) -> tuple[str, list]:
+    """Condicion SQL para filas de espacios (col = id del espacio)."""
+    v = _visor.get()
+    if v is None:
+        return "TRUE", []
+    if not v:
+        return "FALSE", []
+    ph, params = _lista(v)
+    return f"{col} IN ({ph})", params
+
+
+def _ver_por_espacio(col: str) -> tuple[str, list]:
+    """Condicion SQL para filas de proyectos (col = su espacio_id)."""
+    v = _visor.get()
+    if v is None:
+        return "TRUE", []
+    if not v:
+        return f"{col} IS NULL", []
+    ph, params = _lista(v)
+    return f"({col} IS NULL OR {col} IN ({ph}))", params
+
+
+def _ver_proyecto(col: str) -> tuple[str, list]:
+    """Condicion SQL para filas que cuelgan de un proyecto (col = proyecto_id)."""
+    if _visor.get() is None:
+        return "TRUE", []
+    cond, params = _ver_por_espacio("espacio_id")
+    return f"{col} IN (SELECT id FROM proyectos WHERE {cond})", params
+
+
+def puede_ver_espacio(espacio_id) -> bool:
+    v = _visor.get()
+    return v is None or not espacio_id or espacio_id in v
+
+
+def espacio_de(tipo: str, valor: str):
+    """(existe, espacio_id) de lo que nombra un parametro de ruta -- para
+    visibilidad.py. tipo es una clave fija de _ESPACIO_DE, nunca del cliente."""
+    sql = _ESPACIO_DE[tipo]
+    conn = connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql, (valor,))
+            row = cur.fetchone()
+            return (False, None) if not row else (True, row[0])
+    finally:
+        conn.close()
+
+
+_DE_PROYECTO = "SELECT p.espacio_id FROM {t} x JOIN proyectos p ON p.id = x.proyecto_id WHERE x.id=%s"
+_ESPACIO_DE = {
+    "proyecto": "SELECT espacio_id FROM proyectos WHERE id=%s",
+    "espacio": "SELECT id FROM espacios WHERE id=%s",
+    "tarea": _DE_PROYECTO.format(t="tareas"),
+    "columna": _DE_PROYECTO.format(t="columnas_tablero"),
+    "documento": _DE_PROYECTO.format(t="documentos"),
+    "sprint": _DE_PROYECTO.format(t="sprints"),
+    "hito": _DE_PROYECTO.format(t="hitos"),
+    "wiki": _DE_PROYECTO.format(t="wiki_paginas"),
+}
+
+
 def es_it_usuario(user_id: int) -> bool:
     if user_id is None:
         return False
@@ -1323,7 +1432,7 @@ def load_proyectos_por_espacio(espacio_id: str) -> list:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT id, nombre, color, tipo FROM proyectos WHERE espacio_id=%s ORDER BY orden",
-                (espacio_id,),
+                (espacio_id if puede_ver_espacio(espacio_id) else "",),
             )
             return [{"id": r[0], "nombre": r[1], "color": r[2], "tipo": r[3]} for r in cur.fetchall()]
     finally:
@@ -1333,12 +1442,14 @@ def load_proyectos_por_espacio(espacio_id: str) -> list:
 def load_espacios_activos() -> list:
     """Para el <select> de espacio en el modal de proyecto (_base.html) --
     global de Jinja2 (ver templating.py), igual motivo que proyectos_sidebar."""
+    cond, params = _ver_espacio("id")
     conn = connect()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, nombre, es_personal FROM espacios WHERE activo=TRUE "
-                "ORDER BY es_personal DESC, orden, nombre"
+                f"SELECT id, nombre, es_personal FROM espacios WHERE activo=TRUE AND {cond} "
+                "ORDER BY es_personal DESC, orden, nombre",
+                params or None,
             )
             return [{"id": r[0], "nombre": r[1], "es_personal": bool(r[2])} for r in cur.fetchall()]
     finally:
@@ -1466,6 +1577,9 @@ def load_tasks_by_due_date(date_from: str, date_to: str, proyecto_id: str = "", 
                 "WHERE t.borrada = 0 AND t.fecha_fin BETWEEN %s AND %s"
             )
             params = [date_from, date_to]
+            cond, extra = _ver_proyecto("t.proyecto_id")
+            sql += f" AND {cond}"
+            params += extra
             if proyecto_id:
                 sql += " AND t.proyecto_id=%s"
                 params.append(proyecto_id)
@@ -1587,13 +1701,14 @@ def search_tasks(query: str) -> list:
         with conn.cursor() as cur:
             escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             like = f"%{escaped}%"
+            cond, extra = _ver_proyecto("t.proyecto_id")
             cur.execute(
                 "SELECT t.id, t.titulo, t.estado, t.proyecto_id, p.nombre, p.color "
                 "FROM tareas t LEFT JOIN categorias c ON c.id = t.categoria_id "
                 "LEFT JOIN proyectos p ON p.id = t.proyecto_id "
                 "WHERE t.borrada = 0 AND (t.titulo LIKE %s OR t.descripcion LIKE %s "
-                "OR t.proximo_paso LIKE %s OR c.nombre LIKE %s)",
-                (like, like, like, like),
+                f"OR t.proximo_paso LIKE %s OR c.nombre LIKE %s) AND {cond}",
+                (like, like, like, like, *extra),
             )
             return [
                 {
@@ -1620,11 +1735,12 @@ def search_wiki_pages(query: str) -> list:
         with conn.cursor() as cur:
             escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             like = f"%{escaped}%"
+            cond, extra = _ver_proyecto("w.proyecto_id")
             cur.execute(
                 "SELECT w.id, w.titulo, w.icono, w.proyecto_id, p.nombre, p.color "
                 "FROM wiki_paginas w LEFT JOIN proyectos p ON p.id = w.proyecto_id "
-                "WHERE w.titulo LIKE %s OR w.contenido LIKE %s",
-                (like, like),
+                f"WHERE (w.titulo LIKE %s OR w.contenido LIKE %s) AND {cond}",
+                (like, like, *extra),
             )
             return [
                 {
@@ -1917,6 +2033,9 @@ def load_tasks_for_sla(date_from: str, date_to: str, proyecto_id: str = "", cate
                 "WHERE t.borrada = 0 AND t.estado != 'OUTCAST' AND DATE(t.creada_en) BETWEEN %s AND %s"
             )
             params = [date_from, date_to]
+            cond, extra = _ver_proyecto("t.proyecto_id")
+            sql += f" AND {cond}"
+            params += extra
             if proyecto_id:
                 sql += " AND t.proyecto_id=%s"
                 params.append(proyecto_id)
@@ -2139,12 +2258,13 @@ def get_mantis_espejo(desde: str, hasta: str) -> list:
 # aparte, mas grande, que queda pendiente -- ver README.
 
 def load_proyectos_por_tipo(tipo: str) -> list:
+    cond, params = _ver_por_espacio("espacio_id")
     conn = connect()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, nombre, color FROM proyectos WHERE tipo=%s AND activo=TRUE ORDER BY orden",
-                (tipo,),
+                f"SELECT id, nombre, color FROM proyectos WHERE tipo=%s AND activo=TRUE AND {cond} ORDER BY orden",
+                (tipo, *params),
             )
             return [{"id": r[0], "nombre": r[1], "color": r[2]} for r in cur.fetchall()]
     finally:
@@ -2177,6 +2297,9 @@ def load_tasks_por_proyectos(proyecto_ids: list, borrada: bool, query: str = "")
                 f"WHERE t.proyecto_id IN ({placeholders}) AND t.borrada=%s"
             )
             params = list(proyecto_ids) + [borrada]
+            cond, extra = _ver_proyecto("t.proyecto_id")
+            sql += f" AND {cond}"
+            params += extra
             if query:
                 like = f"%{query}%"
                 sql += " AND (t.titulo LIKE %s OR t.descripcion LIKE %s OR t.proximo_paso LIKE %s OR c.nombre LIKE %s)"
@@ -2228,7 +2351,9 @@ def load_proyectos_sidebar() -> list:
     conn = connect()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, nombre, color, tipo FROM proyectos WHERE activo=TRUE ORDER BY orden")
+            cond, params = _ver_por_espacio("espacio_id")
+            cur.execute(f"SELECT id, nombre, color, tipo FROM proyectos WHERE activo=TRUE AND {cond} ORDER BY orden",
+                        params or None)
             return [{"id": r[0], "nombre": r[1], "color": r[2], "tipo": r[3]} for r in cur.fetchall()]
     finally:
         conn.close()
@@ -3203,12 +3328,13 @@ def load_tasks_by_reunion(reunion_id: str) -> list:
     """Tareas no borradas etiquetadas a una reunion sincronizada -- solo los
     campos que necesita el mini-listado de /reunion/<id>/ (mas ligero que el
     SELECT completo de tareas que usa el Tablero)."""
+    cond, extra = _ver_proyecto("proyecto_id")
     conn = connect()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, proyecto_id, titulo, estado FROM tareas WHERE borrada = 0 AND reunion_id = %s",
-                (reunion_id,),
+                f"SELECT id, proyecto_id, titulo, estado FROM tareas WHERE borrada = 0 AND reunion_id = %s AND {cond}",
+                (reunion_id, *extra),
             )
             return [{"task_id": r[0], "proyecto_id": r[1], "title": r[2], "status": r[3]} for r in cur.fetchall()]
     finally:
@@ -3246,12 +3372,14 @@ def load_sidebar_projects() -> list:
     scrum_projects + core/templates/base.html en cuanto a filtrar
     activo=TRUE y ordenar por 'orden'. Un proyecto sin espacio_id cae en un
     grupo "Sin espacio" al final, nunca desaparece del sidebar."""
+    cond, params = _ver_por_espacio("espacio_id")
     conn = connect()
     try:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT id, nombre, color, tipo, requiere_subtareas_completas, espacio_id "
-                "FROM proyectos WHERE activo=TRUE ORDER BY orden"
+                f"FROM proyectos WHERE activo=TRUE AND {cond} ORDER BY orden",
+                params or None,
             )
             proyectos = [
                 {"id": r[0], "nombre": r[1], "color": r[2], "tipo": r[3],

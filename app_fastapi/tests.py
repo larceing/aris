@@ -2540,3 +2540,110 @@ class AccesoPorGruposTests(unittest.TestCase):
             self.assertEqual(auth.acceso_por_grupos(["/Tareas/Admin"]), (True, True))
             self.assertEqual(auth.acceso_por_grupos(["/IT"]), (True, True))
             self.assertEqual(auth.acceso_por_grupos(["/TareasOtra"]), (False, False))
+
+
+class VisibilidadEspaciosTests(EntornoAisladoTestCase):
+    """Cada espacio, con sus proyectos y tareas, solo lo ven sus miembros;
+    IT lo ve todo y un proyecto sin espacio lo sigue viendo cualquiera."""
+
+    def setUp(self):
+        from . import visibilidad
+        self.visibilidad = visibilidad
+        self.client = TestClient(app, follow_redirects=False)
+        sufijo = uuid.uuid4().hex[:8]
+        self.miembro = f"{TEST_PREFIX}miembro_{sufijo}"
+        self.ajeno = f"{TEST_PREFIX}ajeno_{sufijo}"
+        conn = db.connect()
+        try:
+            with conn.cursor() as cur:
+                for u in (self.miembro, self.ajeno):
+                    cur.execute("INSERT INTO auth_user (password, is_superuser, username, first_name, last_name, email, "
+                                "is_staff, is_active, date_joined) VALUES ('!', 0, %s, '', '', '', 0, 1, NOW())", (u,))
+            conn.commit()
+        finally:
+            conn.close()
+        self.miembro_id, self.ajeno_id = db.get_user_id(self.miembro), db.get_user_id(self.ajeno)
+        self.espacio = f"{TEST_PREFIX}{sufijo}"
+        self.nombre_espacio = f"{TEST_PREFIX}Privado {sufijo}"
+        db.crear_espacio(self.espacio, self.nombre_espacio, "#123456", self.miembro_id)
+        self.proyecto = f"{TEST_PREFIX.lower()}p{sufijo}"
+        self.nombre_proyecto = f"{TEST_PREFIX}Proyecto oculto {sufijo}"
+        db.crear_proyecto(self.proyecto, self.nombre_proyecto, "", "", "#123456", "Activo", "kanban", "", "",
+                          espacio_id=self.espacio)
+        self.legado = f"{TEST_PREFIX.lower()}l{sufijo}"
+        self.nombre_legado = f"{TEST_PREFIX}Proyecto sin espacio {sufijo}"
+        db.crear_proyecto(self.legado, self.nombre_legado, "", "", "#123456", "Activo", "kanban", "", "")
+        self.tarea = f"{TEST_PREFIX}{uuid.uuid4().hex[:8]}"
+        self.titulo = f"{TEST_PREFIX}tarea secreta {sufijo}"
+        db.crear_tarea(self.tarea, self.proyecto, "", self.titulo, "Pendiente", "Normal", "", "", "", "")
+
+    def tearDown(self):
+        app.dependency_overrides.pop(self.visibilidad.sesion, None)
+        app.dependency_overrides.pop(auth.requiere_login, None)
+        db.fijar_visor(None)
+        conn = db.connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM tareas WHERE id=%s", (self.tarea,))
+            conn.commit()
+        finally:
+            conn.close()
+        db.eliminar_proyecto(self.proyecto)
+        db.eliminar_proyecto(self.legado)
+        conn = db.connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM espacio_usuarios WHERE user_id IN (%s, %s)", (self.miembro_id, self.ajeno_id))
+                cur.execute("DELETE FROM espacios WHERE id=%s OR owner_id IN (%s, %s)",
+                            (self.espacio, self.miembro_id, self.ajeno_id))
+                cur.execute("DELETE FROM auth_user WHERE id IN (%s, %s)", (self.miembro_id, self.ajeno_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _como(self, usuario, es_it=False):
+        app.dependency_overrides[self.visibilidad.sesion] = lambda: (usuario, es_it)
+        app.dependency_overrides[auth.requiere_login] = lambda: usuario
+
+    def test_quien_no_es_miembro_no_entra_en_nada_del_espacio(self):
+        self._como(self.ajeno)
+        for url in (f"/proyecto/{self.proyecto}/tablero/", f"/proyecto/{self.proyecto}/",
+                    f"/tarea/{self.tarea}/detalle/", f"/espacio/{self.espacio}/",
+                    f"/espacio/{self.espacio}/muro/", f"/proyecto/{self.proyecto}/wiki/"):
+            self.assertEqual(self.client.get(url).status_code, 404, url)
+        # ni lo encuentra buscando ni le sale en las listas
+        self.assertEqual(self.client.get("/buscar/", params={"q": self.titulo}).json()["results"], [])
+        html = self.client.get("/").text
+        self.assertNotIn(self.nombre_proyecto, html)
+        self.assertNotIn(self.nombre_espacio, self.client.get("/espacios/").text)
+        # el proyecto sin espacio, si
+        self.assertIn(self.nombre_legado, html)
+        self.assertEqual(self.client.get(f"/proyecto/{self.legado}/tablero/").status_code, 200)
+
+    def test_el_miembro_lo_ve(self):
+        self._como(self.miembro)
+        self.assertEqual(self.client.get(f"/proyecto/{self.proyecto}/tablero/").status_code, 200)
+        self.assertEqual(self.client.get(f"/tarea/{self.tarea}/detalle/").status_code, 200)
+        self.assertIn(self.nombre_proyecto, self.client.get("/").text)
+        self.assertEqual([r["task_id"] for r in self.client.get("/buscar/", params={"q": self.titulo}).json()["results"]],
+                         [self.tarea])
+
+    def test_al_invitarle_lo_ve_y_al_quitarle_deja_de_verlo(self):
+        self._como(self.ajeno)
+        db.agregar_miembro_espacio(self.espacio, self.ajeno_id, "lector")
+        self.assertEqual(self.client.get(f"/proyecto/{self.proyecto}/tablero/").status_code, 200)
+        db.quitar_miembro_espacio(self.espacio, self.ajeno_id)
+        self.assertEqual(self.client.get(f"/proyecto/{self.proyecto}/tablero/").status_code, 404)
+
+    def test_it_lo_ve_todo(self):
+        self._como(self.ajeno, es_it=True)
+        self.assertEqual(self.client.get(f"/proyecto/{self.proyecto}/tablero/").status_code, 200)
+        self.assertIn(self.nombre_espacio, self.client.get("/espacios/").text)
+
+    def test_sin_sesion_no_filtra(self):
+        db.fijar_visor(None)
+        self.assertIn(self.proyecto, {p["id"] for p in db.load_proyectos_basico()})
+        db.fijar_visor(set())
+        ids = {p["id"] for p in db.load_proyectos_basico()}
+        self.assertNotIn(self.proyecto, ids)
+        self.assertIn(self.legado, ids)
