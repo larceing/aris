@@ -1,0 +1,79 @@
+/* Pantallas medianas y pequeñas (portátil, tablet y móvil).
+   Va después de main.css y antes del CSS de tema de la instalación.
+   La cabecera lleva búsqueda, cinco vistas, avisos, configuración y usuario:
+   a todo texto pide unos 1.600 px, así que se va recogiendo por tramos. */
+
+/* El buscador cede sitio antes que nada. */
+.header-center { flex: 1 1 auto; min-width: 0; }
+.global-search-wrap { width: 100%; max-width: 380px; min-width: 140px; }
+@media (max-width: 900px) { .global-search-wrap { width: 100%; } }
+
+/* Portátil (< 1600 px): las vistas se quedan solo con el icono; el nombre sale al pasar el ratón. */
+@media (max-width: 1599px) {
+    .header-view-btn { font-size: 0; gap: 0; padding: 4px 13px; }
+    .header-view-btn svg { width: 17px; height: 17px; }
+}
+
+/* Portátil pequeño y tablet (< 1100 px): sin el nombre de la app ni el del usuario. */
+@media (max-width: 1099px) {
+    .app-header { gap: 10px; padding: 10px 12px; }
+    .app-title { font-size: 0; gap: 0; }
+    .header-portal-btn { font-size: 0; padding: 5px 8px; }
+    .header-portal-btn::before { content: "←"; font-size: 14px; }
+    .user-menu-btn { font-size: 0; gap: 2px; }
+    .header-right { gap: 2px; }
+    .header-view-btn { padding: 4px 10px; }
+}
+
+/* Móvil (≤ 760 px): cabecera en filas, menú lateral por encima del contenido. */
+@media (max-width: 760px) {
+    html, body { height: auto; }
+    .app-header {
+        position: static; height: auto; flex-wrap: wrap;
+        padding: 6px 8px; gap: 4px 6px;
+    }
+    .header-left { order: 1; flex: 1; min-width: 0; }
+    /* Los hijos de la parte derecha se colocan sueltos en la cabecera. */
+    .header-right { display: contents; }
+    .header-right > * { order: 2; }
+    .header-center { order: 3; flex: 1 0 100%; padding: 2px 0 4px; }
+    .global-search-wrap { max-width: none; }
+    .global-search-wrap input { font-size: 16px; padding: 8px 14px; }
+    .header-view-btn, .user-menu-btn { margin: 0; min-height: 40px; min-width: 40px; justify-content: center; }
+    .header-view-btn { padding: 4px 8px; border-bottom-width: 0; border-radius: 8px; }
+    .header-view-btn.active { background: rgba(255,255,255,.1); }
+    .notif-wrap, .user-menu-wrap { align-self: center; }
+    .notif-dropdown, .user-menu-dropdown { position: fixed; top: 52px; left: 8px; right: 8px; width: auto; max-width: none; margin-top: 0; }
+    /* Las cinco vistas, como una barra de pestañas con su nombre debajo del icono. */
+    .header-right > .header-vista {
+        order: 4; flex: 1 1 0; flex-direction: column; gap: 2px;
+        font-size: 11px; font-weight: 600; padding: 4px 2px; min-width: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .header-right > .header-vista svg { width: 18px; height: 18px; }
+
+    /* Cuerpo: la página entera hace scroll, no una caja de alto fijo. */
+    .app-body { display: block; height: auto; overflow: visible; }
+    .app-content { overflow: visible; min-height: 60vh; }
+
+    /* Menú lateral: se abre por encima con el botón ☰ y empieza cerrado. */
+    .sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0; z-index: 400;
+        width: min(300px, 86vw); min-width: 0;
+        transform: translateX(0); transition: transform .2s ease;
+        box-shadow: 6px 0 28px rgba(15, 23, 42, .45);
+    }
+    .sidebar.collapsed { width: min(300px, 86vw); min-width: 0; transform: translateX(-105%); box-shadow: none; }
+    .sidebar-toggle { min-width: 40px; min-height: 40px; justify-content: center; }
+
+    /* Contenido: nada más ancho que la pantalla. */
+    .app-content img, .app-content video, .app-content iframe { max-width: 100%; }
+    .app-content pre, .app-content code { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .app-content table { max-width: 100%; }
+    .modal { max-width: calc(100vw - 16px); }
+    .project-tabs { padding: 0 8px; }
+
+    /* Sprints: los botones bajan debajo de los datos en vez de aplastarlos. */
+    .app-content .sprint-card-item { flex-wrap: wrap; }
+    .app-content .sprint-card-right { flex-shrink: 1; justify-content: flex-start; }
+}
