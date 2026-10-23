@@ -6,6 +6,7 @@
 <title>{% block title %}{{ app_nombre() }}{% endblock %}</title>
 <link rel="icon" type="image/png" href="/static/img/favicon.png">
 <link rel="stylesheet" href="/static/css/main.css">
+<link rel="stylesheet" href="/static/css/responsive.css">
 {% if app_tema_css() %}<link rel="stylesheet" href="{{ app_tema_css() }}">{% endif %}
 {% block extra_head %}{% endblock %}
 </head>
@@ -25,11 +26,11 @@
         </div>
     </div>
     <div class="header-right">
-        <a href="/espacios/" class="header-view-btn {% if activo == 'espacios' or activo in _PROYECTO_TABS %}active{% endif %}">{{ icon("folder", 14) }} Espacios</a>
-        <a href="/calendario/" class="header-view-btn {% if activo == 'calendario' %}active{% endif %}">{{ icon("calendar", 14) }} Calendario</a>
-        <a href="/kanban/" class="header-view-btn {% if activo == 'kanban_global' %}active{% endif %}">{{ icon("columns", 14) }} Kanban</a>
-        <a href="/scrum/" class="header-view-btn {% if activo == 'scrum_global' %}active{% endif %}">{{ icon("layers", 14) }} Scrum</a>
-        {% if es_it() %}<a href="/sla/" class="header-view-btn {% if activo == 'sla' %}active{% endif %}">{{ icon("trending-up", 14) }} SLA</a>{% endif %}
+        <a href="/espacios/" class="header-view-btn header-vista {% if activo == 'espacios' or activo in _PROYECTO_TABS %}active{% endif %}" title="Espacios">{{ icon("folder", 14) }} Espacios</a>
+        <a href="/calendario/" class="header-view-btn header-vista {% if activo == 'calendario' %}active{% endif %}" title="Calendario">{{ icon("calendar", 14) }} Calendario</a>
+        <a href="/kanban/" class="header-view-btn header-vista {% if activo == 'kanban_global' %}active{% endif %}" title="Kanban">{{ icon("columns", 14) }} Kanban</a>
+        <a href="/scrum/" class="header-view-btn header-vista {% if activo == 'scrum_global' %}active{% endif %}" title="Scrum">{{ icon("layers", 14) }} Scrum</a>
+        {% if es_it() %}<a href="/sla/" class="header-view-btn header-vista {% if activo == 'sla' %}active{% endif %}" title="SLA">{{ icon("trending-up", 14) }} SLA</a>{% endif %}
         <button type="button" class="header-view-btn" id="bookmarkPageBtn" title="Guardar esta página como marcador" onclick="abrirMarcadorModal()">{{ icon("star", 14) }}</button>
         <div class="notif-wrap">
             <button type="button" class="header-view-btn notif-btn {% if activo == 'notificaciones' %}active{% endif %}" id="notifBtn" title="Notificaciones" onclick="toggleNotif(event)">{{ icon("bell", 15) }}<span class="notif-count" id="notifCount" hidden></span></button>
@@ -356,11 +357,22 @@ function submitPostForm(action) {
     form.submit();
 }
 
-document.getElementById('sidebarToggle').addEventListener('click', function() {
+// En el móvil el menú lateral va por encima del contenido: empieza cerrado, se cierra
+// al tocar fuera o al elegir algo, y abrirlo ahí no cambia la preferencia del escritorio.
+var esMovil = window.matchMedia('(max-width: 760px)');
+if (esMovil.matches) document.getElementById('sidebar').classList.add('collapsed');
+document.getElementById('sidebarToggle').addEventListener('click', function(e) {
+    e.stopPropagation();
     var sidebar = document.getElementById('sidebar');
     sidebar.classList.toggle('collapsed');
     document.getElementById('appContent').classList.toggle('full');
+    if (esMovil.matches) return;
     try { localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0'); } catch (e) {}
+});
+document.addEventListener('click', function(e) {
+    var sidebar = document.getElementById('sidebar');
+    if (!esMovil.matches || sidebar.classList.contains('collapsed')) return;
+    if (!sidebar.contains(e.target) || e.target.closest('a')) sidebar.classList.add('collapsed');
 });
 
 function toggleUserMenu(e) {
