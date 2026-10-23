@@ -69,7 +69,7 @@ One shared `Jinja2Templates` in `templating.py` — never create a second one. G
 
 ### Espacios and permissions
 
-Every user has one personal espacio (`get_or_create_espacio_personal`, called on `/`), plus shared espacios with members `admin|editor|lector` and per-espacio editor switches. `db.puede_actuar_en_proyecto()` is the single permission check for actions inside a project. **Visibility is not filtered**: anyone logged in sees every project.
+Every user has one personal espacio (`get_or_create_espacio_personal`, called on `/`), plus shared espacios with members `admin|editor|lector` and per-espacio editor switches. `db.puede_actuar_en_proyecto()` is the single permission check for actions inside a project. **Visibility**: a non-IT user only sees espacios they are a member of (plus their personal one) and their projects, tasks, wiki and walls. `visibilidad.proteger` (global dependency in `main.py`) puts the visible espacios in a ContextVar that the `db.load_*`/search queries apply via `_ver_*`, and answers 404 when a path param (`project_id`, `task_id`, `col_id`, `doc_id`, `sprint_id`, `milestone_id`, `page_id`, `espacio_id`) belongs to a hidden espacio. IT sees everything; projects with no espacio stay visible to all; requests without a session (API key) are not filtered. A new cross-project listing must use `_ver_proyecto`.
 
 ### Acciones — one place per action (`acciones.py`)
 
