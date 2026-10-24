@@ -35,8 +35,9 @@ def app_logo() -> str:
 
 def app_tema_css() -> str:
     """Hoja de estilos extra que se carga tras main.css (colores de la marca de
-    esta instalacion; puede ser una URL de otro sitio). Vacia = el aspecto de serie."""
-    return os.getenv("APP_TEMA_CSS", "").strip()
+    esta instalacion; puede ser una URL de otro sitio). Vacia = la plantilla comun
+    de las apps (static/css/plantilla_comun.css)."""
+    return os.getenv("APP_TEMA_CSS", "").strip() or "/static/css/plantilla_comun.css"
 
 
 def app_url_portal() -> str:
