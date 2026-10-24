@@ -1,0 +1,103 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&display=swap");
+/* Plantilla común de las apps de Arce Data Lab (propuestas 8 + 9, con toques del 7).
+   Se carga después de main.css y responsive.css (config.app_tema_css). Solo cambia
+   el aspecto: cabecera clara con «Todas las apps», vistas en píldoras, buscador
+   tonal, menú lateral claro y tarjetas blancas redondeadas sobre fondo #F3F6FA. */
+
+:root {
+    --bg:            #f3f6fa;
+    --panel:         #ffffff;
+    --ink:           #191c20;
+    --muted:         #5a5f67;
+    --border:        #e3e8ee;
+    --header:        #f3f6fa;
+    --selected:      #6a4bc4;
+    --sidebar-bg:    #f3f6fa;
+    --sidebar-hover: #e6ebf2;
+    --sidebar-text:  #2e3238;
+    --sidebar-muted: #5a5f67;
+    --radius:        16px;
+    --radius-sm:     10px;
+    --shadow-sm:     none;
+    --color-blue:      #1d4f7a; --color-blue-dark: #163d5f; --color-blue-tint: #d3e4f5;
+    --aris:          #6a4bc4;
+    --aris-tint:     #e9ddff;
+    --aris-ink:      #22005d;
+    --capa:          #e6ebf2;
+}
+
+html, body { font-family: 'Roboto Flex', Roboto, system-ui, 'Segoe UI', sans-serif; }
+
+/* Cabecera clara; el logo pasa de blanco a oscuro */
+.app-header { color: var(--ink); height: 60px; padding: 8px 16px; gap: 12px; }
+.sidebar-toggle { color: var(--sidebar-text); border-radius: 12px; padding: 8px 10px; }
+.sidebar-toggle:hover { background: var(--capa); }
+.app-title { color: var(--ink); }
+.app-logo { height: 28px; filter: brightness(0); opacity: .88; }
+
+/* «Aplicaciones» pasa a ser el botón de cuadrícula de la plantilla */
+.header-portal-btn {
+    order: -1; width: 44px; height: 44px; padding: 0; border-radius: 12px;
+    background: var(--capa); color: transparent; font-size: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.header-portal-btn::before {
+    content: ""; width: 20px; height: 20px; background: #43474e;
+    -webkit-mask: radial-gradient(circle, #000 1.6px, transparent 1.7px) 0 0 / 6.67px 6.67px;
+            mask: radial-gradient(circle, #000 1.6px, transparent 1.7px) 0 0 / 6.67px 6.67px;
+}
+.header-portal-btn:hover { background: var(--aris-tint); }
+
+/* Buscador tonal (la caja de resultados no se ve mientras está vacía) */
+.search-results:empty { display: none; }
+.global-search-wrap input {
+    background: var(--capa); color: var(--ink); padding: 11px 18px; font-size: 15px; border-radius: 24px;
+}
+.global-search-wrap input::placeholder { color: var(--muted); }
+.global-search-wrap input:focus { background: #fff; box-shadow: 0 0 0 2px var(--aris); }
+
+/* Vistas en píldoras */
+.header-right { align-self: center; gap: 2px; }
+.header-view-btn {
+    align-self: center; margin: 0; min-height: 40px; padding: 0 14px;
+    border: 0; border-radius: 20px; color: #43474e; font-weight: 500;
+}
+.header-view-btn:hover { color: var(--ink); background: var(--capa); }
+.header-view-btn.active { color: var(--aris-ink); background: var(--aris-tint); border-bottom: 0; }
+.user-menu-wrap { align-self: center; }
+.user-menu-btn { color: var(--ink); min-height: 40px; border-radius: 20px; padding: 0 12px; }
+.user-menu-btn:hover { background: var(--capa); }
+.user-menu-dropdown, .notif-dropdown, .search-results { border-color: transparent; border-radius: 20px; box-shadow: 0 8px 28px rgba(15, 23, 42, .16); }
+
+/* Menú lateral claro */
+.app-body { height: calc(100vh - 60px - 30px); }
+.sidebar { padding: 4px 8px; }
+.sidebar.collapsed { padding: 0; }
+.sidebar-type-label::after, .sidebar-divider { background: var(--border); }
+.sidebar-global-link, .sidebar-project-row, .sidebar-marcador-row {
+    border-left: 0; border-radius: 20px; padding-left: 12px;
+}
+.sidebar-global-link.active, .sidebar-project.active .sidebar-project-row {
+    background: var(--aris-tint); color: var(--aris-ink);
+}
+.sidebar-project.active .sidebar-project-name { color: var(--aris-ink); }
+.sidebar-project { border-bottom: 0; }
+
+/* Mensajes */
+.django-message { border-radius: 12px; }
+
+@media (max-width: 760px) {
+    .app-header { height: auto; padding: 8px; }
+    .app-body { height: auto; }
+    .header-portal-btn { width: 40px; height: 40px; }
+    .header-view-btn { min-height: 36px; padding: 0 10px; }
+}
+
+/* Pantalla de entrar: cabecera tonal, tarjeta redondeada y botón de la marca */
+.login-card { border-radius: 28px; box-shadow: 0 2px 12px rgba(15, 23, 42, .08); }
+.login-header { background: var(--aris-tint); color: var(--aris-ink); }
+.login-header img { filter: brightness(0); opacity: .88; }
+.login-header p { color: #4a4458; }
+.login-card label { font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.login-card input { min-height: 48px; border-radius: 14px; background: #fff; border-color: #c3c7cf; font-size: 16px; }
+.login-card .btn-primary { min-height: 48px; border-radius: 16px; background: var(--color-blue); font-size: 16px; }
